@@ -140,6 +140,34 @@ STORE_METRICS.pkBoard=PK_EAST.map(f).sort((a,b)=>b.leads-a.leads).map((x,i)=>({n
 STORE_METRICS.pkRegionTotal=STORE_METRICS.pkBoard.length;
 STORE_METRICS.pkRegionRank=STORE_METRICS.pkBoard.findIndex(x=>x.n==xihu.name)+1;
 
+/* —— 第三轮：每店线索类明细字段（示意）。全站一切线索/留资汇总都由这些字段相加，不再写死 ——
+ * 口径与西湖店一致：西湖店用 STORE_METRICS 原值；其它门店按「本店本月线索 / 西湖店本月线索」比例套用西湖店近 14 天日线索曲线，
+ * 国庆黄金周（10-01~10-07）其它门店日线索 ×GW_BOOST。今日=10-14、昨日=10-13。 */
+const XT=STORE_METRICS.trend14,GW_BOOST=1.4,MS=STORE_METRICS.monthSummary;
+const jit=(id,k)=>0.85+((id*37+k*11)%31)/100;
+for(const x of stores){
+  if(x.id===STORE_METRICS.storeId){
+    Object.assign(x,{daily:XT.map(t=>t.leads),today:STORE_METRICS.todayNewLeads,yday:STORE_METRICS.yesterdayNewLeads,pending:STORE_METRICS.pendingFollow,
+      overdue:STORE_METRICS.overdueFollow,visits:MS.visits,deals:MS.deals,aiReplies:STORE_METRICS.aiReplies,lastLeads:STORE_METRICS.before.dailyLeads*14});
+  }else{
+    const k=x.leads/STORE_METRICS.monthLeads;
+    x.daily=XT.map((t,i)=>Math.max(0,Math.round(t.leads*k*(i<7?GW_BOOST:1)*jit(x.id,i))));
+    x.today=x.daily[13];x.yday=x.daily[12];x.pending=Math.round(x.today*STORE_METRICS.pendingFollow/STORE_METRICS.todayNewLeads);
+    x.overdue=Math.round(x.pending/4);x.visits=Math.round(x.leads*MS.visits/MS.leads);x.deals=Math.round(x.leads*MS.deals/MS.leads);
+    x.aiReplies=Math.round(x.leads*STORE_METRICS.aiReplies/STORE_METRICS.monthLeads);x.lastLeads=Math.round(x.leads*0.86);
+  }
+  x.gw=x.daily.slice(0,7).reduce((a,b)=>a+b,0); // 国庆黄金周 7 天留资
+}
+/* 历史战报：冠军不用华东门店（西湖店案例 10 月第 1 周华东第 5、9 月第 9）。
+ * 国庆黄金周冠军 = 非华东门店中黄金周留资最高者，留资由 daily 算出；9 月 / 8 月为往月示意，写入该店当月整月线索供校验。 */
+const gwChamp=stores.filter(x=>x.region!=="华东").sort((a,b)=>b.gw-a.gw||a.id-b.id)[0];
+const pkHistory=[
+  {name:"国庆黄金周 PK",period:"10-01 至 10-07",store:gwChamp.name,leads:gwChamp.gw,monthLeads:gwChamp.leads,month:"10 月"},
+  {name:"9 月新车上市 PK",period:"9-10 至 9-23",store:"深圳星驰南山店",leads:148,monthLeads:410,month:"9 月"},
+  {name:"8 月夏日试驾 PK",period:"8-12 至 8-25",store:"成都星驰高新店",leads:92,monthLeads:265,month:"8 月"}];
+const checks=pkHistory.map(h=>({name:h.name,store:h.store,leads:h.leads,monthLeads:h.monthLeads,ratio:+(h.leads/h.monthLeads).toFixed(3),
+  ok:h.leads<=h.monthLeads&&h.leads/h.monthLeads>=0.25&&h.leads/h.monthLeads<=0.40&&h.store!==xihu.name&&f(h.store)&&f(h.store).region!=="华东"}));
+if(checks.some(c=>!c.ok))console.error("pkHistory 校验失败",checks);
 const trend=[];for(let d=1;d<=14;d++)trend.push({d:`10-${String(d).padStart(2,"0")}`,play:Math.round(6.2e6+d*2.6e5+Math.sin(d/1.6)*9e5+(d==4?1.8e6:0)+(d==11?1.5e6:0)),leads:Math.round(360+d*11+Math.sin(d/1.4)*60+(d==4?120:0)+(d==11?95:0))});
-window.DB={stores,pk,leads,trend,storeLeads,kpi:{stores:48,accounts:312,plays:"1.2",inter:"380",leads:stores.reduce((a,x)=>a+x.leads,0),rate:"3.1"},STORE_METRICS};
+window.DB={stores,pk,leads,trend,storeLeads,pkHistory,checks,kpi:{stores:48,accounts:312,plays:"1.2",inter:"380",leads:stores.reduce((a,x)=>a+x.leads,0),rate:"3.1"},STORE_METRICS};
 })();
