@@ -42,14 +42,11 @@ const STORE_METRICS={
   liveOnline:1680,         // 示意：当前场在线（600–2500）
   livePeak:2420,           // 示意：峰值在线
   // —— PK（示意）：华东大区 10 家参赛门店，本店居中（第 4）——
-  pkRegionRank:4,
+  pkRegionRank:4,          // 由 pkBoard 计算后校验
   pkRegionTotal:10,
   pkJoinRank:9,            // 示意：加入门店通时排名
-  pkBoard:[                // 示意：本月线索（条）/ 直播场次
-    {n:"上海星驰浦东店",leads:512,lives:27},{n:"南京星驰河西店",leads:487,lives:26},{n:"苏州星驰园区店",leads:462,lives:25},
-    {n:"杭州星驰西湖店",leads:450,lives:24},{n:"宁波星驰鄞州店",leads:431,lives:23},{n:"杭州星驰滨江店",leads:418,lives:22},
-    {n:"合肥星驰政务区店",leads:396,lives:21},{n:"无锡星驰太湖店",leads:377,lives:20},{n:"上海星驰闵行店",leads:352,lives:19},{n:"福州星驰仓山店",leads:329,lives:18}
-  ],
+  // pkBoard / pkRegionRank 由门店矩阵数据计算（见文件末尾），不再单独写死
+  pkBoard:[],
   pkWeekRank:[{w:"9月第1周",r:9},{w:"9月第3周",r:7},{w:"10月第1周",r:5},{w:"10月第2周",r:4}],
   // —— 任务（示意）：结果仅绝对数量，无百分比 ——
   dailyTasks:[
@@ -131,6 +128,17 @@ for(let i=0;i<N;i++){
 /* 覆盖门店自身 leads/plays 示意，与 STORE_METRICS 一致（不影响其它门店） */
 xihu.leads=STORE_METRICS.monthLeads;
 xihu.plays=STORE_METRICS.monthPlays;
+
+/* 华东大区直播 PK（店长视角）——榜单直接从门店矩阵数据计算，按「本月线索」排序。
+ * 为保持「西湖店第 4、距第 3 名差 12 条线索」，调高前三名对手店的本月线索（门店矩阵同步生效）：
+ * 浦东 169→512、河西 233→487、园区 139→462。 */
+const PK_EAST_LEADS={"上海星驰浦东店":512,"南京星驰河西店":487,"苏州星驰园区店":462};
+const PK_EAST=["上海星驰浦东店","南京星驰河西店","苏州星驰园区店","杭州星驰西湖店","宁波星驰鄞州店","杭州星驰滨江店","合肥星驰政务区店","无锡星驰太湖店","上海星驰闵行店","福州星驰仓山店"];
+const PK_LIVES=[27,26,25,24,21,20,18,16,14,6]; // 按名次分配的本月直播场次（示意）；西湖店 24 场与 monthLives 一致
+for(const [n,v] of Object.entries(PK_EAST_LEADS))f(n).leads=v;
+STORE_METRICS.pkBoard=PK_EAST.map(f).sort((a,b)=>b.leads-a.leads).map((x,i)=>({n:x.name,leads:x.leads,lives:PK_LIVES[i],id:x.id}));
+STORE_METRICS.pkRegionTotal=STORE_METRICS.pkBoard.length;
+STORE_METRICS.pkRegionRank=STORE_METRICS.pkBoard.findIndex(x=>x.n==xihu.name)+1;
 
 const trend=[];for(let d=1;d<=14;d++)trend.push({d:`10-${String(d).padStart(2,"0")}`,play:Math.round(6.2e6+d*2.6e5+Math.sin(d/1.6)*9e5+(d==4?1.8e6:0)+(d==11?1.5e6:0)),leads:Math.round(360+d*11+Math.sin(d/1.4)*60+(d==4?120:0)+(d==11?95:0))});
 window.DB={stores,pk,leads,trend,storeLeads,kpi:{stores:48,accounts:312,plays:"1.2",inter:"380",leads:stores.reduce((a,x)=>a+x.leads,0),rate:"3.1"},STORE_METRICS};

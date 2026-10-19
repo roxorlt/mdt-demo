@@ -110,3 +110,14 @@ body{min-width:0;-webkit-text-size-adjust:100%}
 .rrow{gap:8px;padding:0 8px}.rrow .nm{width:auto;flex:1;font-size:13px}.rrow .st{display:none}.rrow .sc{width:auto;font-size:14px}.rrow .bar{flex:0 0 60px}
 .out{min-height:200px}.msg .b{max-width:75%}
 }
+/* 线索：手机宽度（<768px）改为卡片列表 — added 2026-10-19 fix2 */
+.lcards{display:none}
+@media(max-width:767px){
+.card .ltable{display:none}
+.lcards{display:grid;gap:10px;margin-top:4px}
+.lcard2{border:1px solid var(--ln);border-radius:10px;padding:12px 14px;background:var(--p2);cursor:pointer}
+.lcard2:active{border-color:#555}
+.lc-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:15px}
+.lc-r{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.filters #fq{width:100%!important}
+}
