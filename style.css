@@ -121,3 +121,16 @@ body{min-width:0;-webkit-text-size-adjust:100%}
 .lc-r{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
 .filters #fq{width:100%!important}
 }
+/* fix4：留资率公式提示（悬停 / 手机点按）、全国 PK 榜顶部卡片 */
+.tipw{position:relative;cursor:help;border-bottom:1px dashed #777;outline:none}
+.tipb{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:5;background:#fff;color:#000;font-size:12px;font-weight:500;line-height:1.6;padding:8px 10px;border-radius:8px;white-space:nowrap;letter-spacing:0;font-variant-numeric:normal}
+.tipw:hover .tipb,.tipw:focus .tipb,.tipw.open .tipb{display:block}
+.pkh-top{display:flex;justify-content:space-between;align-items:center;gap:24px}
+.pkh-title h2{font-size:26px;margin:6px 0}
+.pkh-stats{display:flex;gap:36px;text-align:right}.pkh-stats .k{font-size:12px}.pkh-stats .n{font-size:24px;font-weight:700;white-space:nowrap}
+@media(max-width:820px){
+.tipb{position:static;margin-top:6px;white-space:normal}
+.pkh-top{flex-direction:column;align-items:stretch;gap:16px}
+.pkh-title h2{font-size:22px;white-space:nowrap}
+.pkh-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;text-align:left}.pkh-stats .n{font-size:20px}
+}

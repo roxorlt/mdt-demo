@@ -29,18 +29,12 @@ const STORE_METRICS={
   overdueFollow:2,         // 示意：超 2 小时未跟进
   leadsListTotal:450,      // 示意：共 X 条
   leadsListShow:24,        // 列表展示最近 N 条
-  // —— 近 14 天趋势（确定性，日播放 3.5k–7.2k，日线索 12–18）——
-  trend14:[
-    {d:"10-01",play:4200,leads:12},{d:"10-02",play:3800,leads:14},{d:"10-03",play:5100,leads:13},
-    {d:"10-04",play:6200,leads:16},{d:"10-05",play:4800,leads:15},{d:"10-06",play:3500,leads:12},
-    {d:"10-07",play:7200,leads:18},{d:"10-08",play:5600,leads:14},{d:"10-09",play:4900,leads:13},
-    {d:"10-10",play:6100,leads:17},{d:"10-11",play:6800,leads:16},{d:"10-12",play:4500,leads:12},
-    {d:"10-13",play:5200,leads:13},{d:"10-14",play:5900,leads:15}
-  ],
+  // —— 西湖店每日线索见下方 XIHU_DAILY（8-01 至 10-14，近 30 天合计 450）——
   // —— 直播（示意）——
-  monthLives:24,           // 示意：10-01 至 10-14 共 24 场（日 1–3，月约 40 场）
-  liveOnline:1680,         // 示意：当前场在线（600–2500）
-  livePeak:2420,           // 示意：峰值在线
+  lives30:40,              // 示意：近 30 天直播 40 场（日 1–3 场）——全站西湖店直播场次唯一来源
+  viewers30:58400,         // 示意：近 30 天直播观看人次（场均 1,460，在 600–2,500 内）
+  posts30:64,posts14:31,   // 示意：近 30 天发布 64 条；近两周 31 条（案例口径）
+  week:7,                  // 示意：本周（10-12 至 10-14）发布
   // —— PK（示意）：华东大区 10 家参赛门店，本店居中（第 4）——
   pkRegionRank:4,          // 由 pkBoard 计算后校验
   pkRegionTotal:10,
@@ -49,13 +43,14 @@ const STORE_METRICS={
   pkBoard:[],
   pkWeekRank:[{w:"9月第1周",r:9},{w:"9月第3周",r:7},{w:"10月第1周",r:5},{w:"10月第2周",r:4}],
   // —— 任务（示意）：结果仅绝对数量，无百分比 ——
+  // 全店今日任务表（唯一来源）：任务页 / 驾驶舱 / 手机工作台都从这里取。status: done 已完成 · todo 待完成 · later 未开始（演示时刻 14:00）
   dailyTasks:[
-    {title:"发一条新车视频",detail:"星驰 X5 · 30 秒空间实测",done:true,result:"播放 6,240 次 · 带来 4 条线索"},
-    {title:"开一场晚上的直播",detail:"19:30–21:00 · 置换补贴专场",done:true,result:"场观 1,860 人 · 带来 7 条线索"},
-    {title:"回完昨天的私信",detail:"昨日私信 23 条",done:true,result:"回复 23 条 · 约到店 3 组"},
-    {title:"跟进 2 条超时线索",detail:"超 2 小时未跟进",done:false,result:null}
+    {title:"发一条新车视频",detail:"星驰 X5 · 30 秒空间实测",owner:"新媒体专员",status:"done",result:"播放 6,240 次 · 带来 4 条线索"},
+    {title:"开一场晚上的直播",detail:"19:30–21:00 · 置换补贴专场",owner:"新媒体专员",status:"later",start:"19:30",result:null},
+    {title:"回完昨天的私信",detail:"昨日私信 23 条",owner:"新媒体专员",status:"done",result:"回复 23 条 · 约到店 3 组"},
+    {title:"跟进超时线索",detail:"超 2 小时未跟进",owner:"销售顾问",status:"todo",result:null}
   ],
-  monthSummary:{days:14,videos:31,lives:42,viewers:58400,leads:450,visits:58,deals:14,rankFrom:9,rankTo:4},
+  monthSummary:{visits:58,deals:14,rankFrom:9}, // 近 30 天到店 / 成交（案例口径）；线索、直播、观看、发布从门店字段取
   monthTaskLeadsBonus:48,  // 示意：本月任务带来 +48 条线索
   // —— 加入门店通之前（示意，口播 v4 前后对比用；非真实结果、非承诺）——
   before:{label:"示意",dailyLeads:7,monthLeads:210,weekVideos:2,weekLives:2,liveMinutes:40,replyHours:6,pkRank:9}
@@ -79,7 +74,6 @@ for(const [rg,list] of Object.entries(regions))for(const [c,n] of list){
   week:bad?ri(0,3):ri(8,32),leads:bad?ri(18,45):ri(90,260),plays:bad?ri(40,160)*1e4:ri(120,520)*1e4,health:bad?ri(38,58):ri(72,97)});id++}
 // 固定前三
 const f=n=>stores.find(x=>x.name===n);
-const pk=[["杭州星驰西湖店",98620],["深圳星驰南山店",71240],["成都星驰高新店",68910],["上海星驰浦东店",61350],["武汉星驰光谷店",58770],["广州星驰天河店",55120],["北京星驰望京店",52480],["南京星驰河西店",49960],["重庆星驰渝北店",47310],["长沙星驰岳麓店",44090]];
 const leadSrc=["抖音评论","抖音私信","抖音直播弹幕","快手私信","快手直播弹幕","小红书评论","小红书私信"];
 const cars=["星驰 S7","星驰 X5","星驰 E3"],sur="张李王刘陈杨赵黄周吴徐孙胡朱高林何郭马罗梁宋郑谢韩唐冯于董萧";
 const budgets=["12-15万","15-18万","18-22万","22-26万","10-13万"],lv=["A 高意向","B 中意向","C 待培育"],st=["待跟进","跟进中","已到店","已成交","战败"];
@@ -110,7 +104,7 @@ for(let i=0;i<N;i++){
   let t;
   if(i<STORE_METRICS.todayNewLeads){
     /* 今日：前 overdueFollow 条放在 10:00 前（超 2h，相对演示时刻 14:00） */
-    const hour=i<STORE_METRICS.overdueFollow?9+i:12+((i*3)%4);
+    const hour=i<STORE_METRICS.overdueFollow?9+i:12+((i*3)%2); // 演示时刻 14:00 之前
     const min=(i*17)%60;
     t=`10-14 ${String(hour).padStart(2,"0")}:${String(min).padStart(2,"0")}`;
   }else if(i<STORE_METRICS.todayNewLeads+4){
@@ -134,40 +128,88 @@ xihu.plays=STORE_METRICS.monthPlays;
  * 浦东 169→512、河西 233→487、园区 139→462。 */
 const PK_EAST_LEADS={"上海星驰浦东店":512,"南京星驰河西店":487,"苏州星驰园区店":462};
 const PK_EAST=["上海星驰浦东店","南京星驰河西店","苏州星驰园区店","杭州星驰西湖店","宁波星驰鄞州店","杭州星驰滨江店","合肥星驰政务区店","无锡星驰太湖店","上海星驰闵行店","福州星驰仓山店"];
-const PK_LIVES=[27,26,25,24,21,20,18,16,14,6]; // 按名次分配的本月直播场次（示意）；西湖店 24 场与 monthLives 一致
 for(const [n,v] of Object.entries(PK_EAST_LEADS))f(n).leads=v;
-STORE_METRICS.pkBoard=PK_EAST.map(f).sort((a,b)=>b.leads-a.leads).map((x,i)=>({n:x.name,leads:x.leads,lives:PK_LIVES[i],id:x.id}));
+
+/* ============================================================
+ * 第四轮：全站口径「近 30 天」= 9-15 至 10-14（演示时刻 10-14 14:00）。
+ * 每店每日线索 daily 覆盖 8-01 至 10-14（75 天），近 30 天相加 = 门店矩阵线索数；
+ * 页面上所有汇总、排名、比率都由下列门店字段计算，不写死。
+ * ============================================================ */
+const DEMO_NOW={md:"10-14",hm:"14:00",label:"2026-10-14 14:00",weekday:"周三"};
+const DAYS=[];for(let i=0;i<75;i++){const d=new Date(Date.UTC(2026,7,1)+i*864e5);DAYS.push(String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0"))}
+const di=md=>DAYS.indexOf(md),W0=di("09-15"),WN=DAYS.length; // 近 30 天 = DAYS[W0..74]
+const WIN=DAYS.slice(W0);
+const hsh=(a,b)=>(((a*2654435761)^(b*40503+b*b*977))>>>0)%1000/1000;
+const jt=(id,i)=>0.85+0.3*hsh(id,i);
+/* 按比例缩放 raw，使 [from,to) 区间的整数和恰好等于 total（同一系数作用于全部天） */
+function fitSum(raw,total,from=0,to=raw.length){const S=raw.slice(from,to).reduce((a,b)=>a+b,0)||1,k=total/S;const o=raw.map(v=>Math.max(0,Math.round(v*k)));
+  let d=total-o.slice(from,to).reduce((a,b)=>a+b,0),i=to-1;while(d!==0){if(d>0||o[i]>0){o[i]+=Math.sign(d);d-=Math.sign(d)}i=i-1<from?to-1:i-1}return o}
+const GW_FROM=di("10-01"),GW_TO=di("10-07"),GW_BOOST=1.4;
+/* 西湖店（案例设定）：加入前 8 月每天约 7 条（8 月合计 210 = before.monthLeads）；9-01 加入，9-08 起爬坡；近 30 天每天 12–18 条、合计 450 */
+const XIHU_W=[13,14,12,15,14,16,13,14,15,13,16,14,15,17,14,15, 16,15,17,16,15,14,18, 15,16,17,16,17,13,15];
+const XIHU_DAILY=[...fitSum(Array.from({length:31},(_,i)=>7*jt(13,i)),210),7,6,8,7,7,6,8, 8,9,10,10,11,11,12, ...XIHU_W];
+/* 华东前三（第二轮为保西湖店第 4 调高过本月线索：浦东 169→512、河西 233→487、园区 139→462）：
+ * 历史按原水平，9-08 至 9-21 爬坡到现水平，这样往月战报不会被它们包揽 */
+const ORIG={"上海星驰浦东店":169,"南京星驰河西店":233,"苏州星驰园区店":139};
+/* 近 30 天内新加入的门店（门店数「较前 30 天」由此计算） */
+const SINCE={47:"09-26",48:"10-09"};
+for(const x of stores){
+  x.since=SINCE[x.id]||"05-01";
+  if(x.id===STORE_METRICS.storeId){x.daily=XIHU_DAILY.slice();x.week=STORE_METRICS.week}
+  else{const r0=ORIG[x.name]?ORIG[x.name]/x.leads:1,a=di("09-07"),b=di("09-21"),s0=di(x.since);
+    const raw=DAYS.map((_,i)=>i<s0?0:(i<=a?r0:i>=b?1:r0+(1-r0)*(i-a)/(b-a))*jt(x.id,i)*(i>=GW_FROM&&i<=GW_TO?GW_BOOST:1));
+    x.daily=fitSum(raw,x.leads,W0,WN)}
+  const w=x.daily.slice(W0);x.leads=w.reduce((a,b)=>a+b,0);
+  x.prevLeads=x.daily.slice(W0-30,W0).reduce((a,b)=>a+b,0);  // 前 30 天（8-16 至 9-14）
+  x.today=x.daily[WN-1];x.yday=x.daily[WN-2];
+  // 播放 / 互动（近 30 天）及前 30 天
+  if(x.id===STORE_METRICS.storeId){x.plays=STORE_METRICS.monthPlays;x.inter=STORE_METRICS.monthInter}
+  else x.inter=Math.round(x.plays*0.031*jt(x.id,101));
+  x.playsDaily=fitSum(WIN.map((_,i)=>0.65+0.7*hsh(x.id,200+i)),x.plays);
+  x.prevPlays=Math.round(x.plays*(0.80+0.14*hsh(x.id,301)));x.prevInter=Math.round(x.inter*(0.80+0.14*hsh(x.id,302)));
+  // 直播场次 / 观看人次 / 发布量（近 30 天）
+  const bad=lag.has(x.id),big={"上海星驰浦东店":46,"南京星驰河西店":44,"苏州星驰园区店":43};
+  if(x.id===STORE_METRICS.storeId){x.lives30=STORE_METRICS.lives30;x.viewers30=STORE_METRICS.viewers30;x.posts30=STORE_METRICS.posts30}
+  else{x.lives30=big[x.name]||(bad?1+x.id%3:12+Math.floor(28*hsh(x.id,7)));x.viewers30=x.lives30*(700+Math.round(1600*hsh(x.id,9)));x.posts30=Math.round(x.week*10*jt(x.id,11))}
+  x.aiWeek=Math.round(x.week*1.8);
+  // 线索跟进 / 到店 / 成交（比例与西湖店一致）
+  if(x.id===STORE_METRICS.storeId)Object.assign(x,{pending:STORE_METRICS.pendingFollow,overdue:STORE_METRICS.overdueFollow,visits:STORE_METRICS.monthSummary.visits,deals:STORE_METRICS.monthSummary.deals,aiReplies:STORE_METRICS.aiReplies});
+  else{x.pending=Math.round(x.today*STORE_METRICS.pendingFollow/STORE_METRICS.todayNewLeads);x.overdue=Math.round(x.pending/4);
+    x.visits=Math.round(x.leads*58/450);x.deals=Math.round(x.leads*14/450);x.aiReplies=Math.round(x.leads*STORE_METRICS.aiReplies/450)}
+  x.topicDone=x.health>=70&&hsh(x.id,401)<0.93; // 「E3 冬季续航话题挑战」是否完成
+  // 账号本周发布之和 = 门店本周发布
+  const ap=fitSum(x.accounts.map((_,k)=>0.5+hsh(x.id,500+k)),x.week);x.accounts.forEach((a,k)=>a.posts=ap[k]);
+}
+const sumR=(x,a,b)=>x.daily.slice(di(a),di(b)+1).reduce((p,q)=>p+q,0);
+/* 华东 PK 榜（近 30 天线索） */
+STORE_METRICS.pkBoard=PK_EAST.map(f).sort((a,b)=>b.leads-a.leads).map(x=>({n:x.name,leads:x.leads,lives:x.lives30,id:x.id}));
 STORE_METRICS.pkRegionTotal=STORE_METRICS.pkBoard.length;
 STORE_METRICS.pkRegionRank=STORE_METRICS.pkBoard.findIndex(x=>x.n==xihu.name)+1;
-
-/* —— 第三轮：每店线索类明细字段（示意）。全站一切线索/留资汇总都由这些字段相加，不再写死 ——
- * 口径与西湖店一致：西湖店用 STORE_METRICS 原值；其它门店按「本店本月线索 / 西湖店本月线索」比例套用西湖店近 14 天日线索曲线，
- * 国庆黄金周（10-01~10-07）其它门店日线索 ×GW_BOOST。今日=10-14、昨日=10-13。 */
-const XT=STORE_METRICS.trend14,GW_BOOST=1.4,MS=STORE_METRICS.monthSummary;
-const jit=(id,k)=>0.85+((id*37+k*11)%31)/100;
-for(const x of stores){
-  if(x.id===STORE_METRICS.storeId){
-    Object.assign(x,{daily:XT.map(t=>t.leads),today:STORE_METRICS.todayNewLeads,yday:STORE_METRICS.yesterdayNewLeads,pending:STORE_METRICS.pendingFollow,
-      overdue:STORE_METRICS.overdueFollow,visits:MS.visits,deals:MS.deals,aiReplies:STORE_METRICS.aiReplies,lastLeads:STORE_METRICS.before.dailyLeads*14});
-  }else{
-    const k=x.leads/STORE_METRICS.monthLeads;
-    x.daily=XT.map((t,i)=>Math.max(0,Math.round(t.leads*k*(i<7?GW_BOOST:1)*jit(x.id,i))));
-    x.today=x.daily[13];x.yday=x.daily[12];x.pending=Math.round(x.today*STORE_METRICS.pendingFollow/STORE_METRICS.todayNewLeads);
-    x.overdue=Math.round(x.pending/4);x.visits=Math.round(x.leads*MS.visits/MS.leads);x.deals=Math.round(x.leads*MS.deals/MS.leads);
-    x.aiReplies=Math.round(x.leads*STORE_METRICS.aiReplies/STORE_METRICS.monthLeads);x.lastLeads=Math.round(x.leads*0.86);
-  }
-  x.gw=x.daily.slice(0,7).reduce((a,b)=>a+b,0); // 国庆黄金周 7 天留资
-}
-/* 历史战报：冠军不用华东门店（西湖店案例 10 月第 1 周华东第 5、9 月第 9）。
- * 国庆黄金周冠军 = 非华东门店中黄金周留资最高者，留资由 daily 算出；9 月 / 8 月为往月示意，写入该店当月整月线索供校验。 */
-const gwChamp=stores.filter(x=>x.region!=="华东").sort((a,b)=>b.gw-a.gw||a.id-b.id)[0];
-const pkHistory=[
-  {name:"国庆黄金周 PK",period:"10-01 至 10-07",store:gwChamp.name,leads:gwChamp.gw,monthLeads:gwChamp.leads,month:"10 月"},
-  {name:"9 月新车上市 PK",period:"9-10 至 9-23",store:"深圳星驰南山店",leads:148,monthLeads:410,month:"9 月"},
-  {name:"8 月夏日试驾 PK",period:"8-12 至 8-25",store:"成都星驰高新店",leads:92,monthLeads:265,month:"8 月"}];
-const checks=pkHistory.map(h=>({name:h.name,store:h.store,leads:h.leads,monthLeads:h.monthLeads,ratio:+(h.leads/h.monthLeads).toFixed(3),
-  ok:h.leads<=h.monthLeads&&h.leads/h.monthLeads>=0.25&&h.leads/h.monthLeads<=0.40&&h.store!==xihu.name&&f(h.store)&&f(h.store).region!=="华东"}));
+/* 全国综合分：线索 50% + 直播观看 30% + 发布量 20%；每项除以 48 店中该项最大值归一化，满分 100 */
+const SCORE_W={leads:0.5,viewers30:0.3,posts30:0.2};
+const MX=Object.fromEntries(Object.keys(SCORE_W).map(k=>[k,Math.max(...stores.map(x=>x[k]))]));
+stores.forEach(x=>{x.score=Math.round(1000*Object.entries(SCORE_W).reduce((a,[k,w])=>a+w*x[k]/MX[k],0)*100)/1000});
+const national=[...stores].sort((a,b)=>b.score-a.score||a.id-b.id).map((x,i)=>({rank:i+1,n:x.name,id:x.id,score:x.score,leads:x.leads,viewers:x.viewers30,posts:x.posts30}));
+/* 历史战报：按活动期间留资（= 期间每日线索之和）排名，取前三；当月线索 = 该店当月每日线索之和 */
+const PKH=[{name:"国庆黄金周 PK",from:"10-01",to:"10-07",mFrom:"10-01",mTo:"10-14",mLabel:"10 月 1–14 日"},
+  {name:"9 月新车上市 PK",from:"09-01",to:"09-07",mFrom:"09-01",mTo:"09-30",mLabel:"9 月"},
+  {name:"8 月夏日试驾 PK",from:"08-12",to:"08-25",mFrom:"08-01",mTo:"08-31",mLabel:"8 月"}];
+const pkHistory=PKH.map(h=>{const all=stores.map(x=>({store:x.name,region:x.region,leads:sumR(x,h.from,h.to),monthLeads:sumR(x,h.mFrom,h.mTo)})).sort((a,b)=>b.leads-a.leads||a.store.localeCompare(b.store));
+  all.forEach(r=>r.rank=1+all.filter(o=>o.leads>r.leads).length);
+  return {...h,period:h.from.replace(/^0/,"")+" 至 "+h.to.replace(/^0/,""),top:all.filter(r=>r.rank<=3),xihuRank:all.find(r=>r.store==xihu.name).rank}});
+const checks=pkHistory.map(h=>({name:h.name,xihuRank:h.xihuRank,ok:!h.top.some(t=>t.store==xihu.name)&&h.top.every(t=>t.leads<=t.monthLeads)}));
 if(checks.some(c=>!c.ok))console.error("pkHistory 校验失败",checks);
-const trend=[];for(let d=1;d<=14;d++)trend.push({d:`10-${String(d).padStart(2,"0")}`,play:Math.round(6.2e6+d*2.6e5+Math.sin(d/1.6)*9e5+(d==4?1.8e6:0)+(d==11?1.5e6:0)),leads:Math.round(360+d*11+Math.sin(d/1.4)*60+(d==4?120:0)+(d==11?95:0))});
-window.DB={stores,pk,leads,trend,storeLeads,pkHistory,checks,kpi:{stores:48,accounts:312,plays:"1.2",inter:"380",leads:stores.reduce((a,x)=>a+x.leads,0),rate:"3.1"},STORE_METRICS};
+/* 直播间：单场观看人次 600–2,500；峰值在线 = 观看人次 × 1/5–1/3；留资 = 观看人次 × 本店留资率（线索 ÷ 直播观看人次） */
+const toMin=t=>{const[h,m]=t.split(":").map(Number);return h*60+m},hm=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
+const ROOMS=[[13,"星驰 X5 金秋到店直播 · 置换补贴专场",1,"01:12:40",910,0.27],[28,"星驰 E3 冬季续航实测直播",1,"00:48:15",1340,0.25],
+  [33,"星驰 S7 夜间灯语首发看车",0,"00:58:00",1120,0.30,"10-13 20:00"],[11,"浦东店周三晚团购夜",0,"01:10:00",760,0.32,"10-07 19:30"],
+  [41,"光谷店星驰 X5 试驾直播",0,"01:30:00",1980,0.22,"10-13 19:30"],[14,"滨江店 E3 车主交付仪式",0,"01:05:00",1460,0.24,"10-12 15:00"],
+  [23,"天河店国庆回顾专场",0,"01:20:00",2380,0.21,"10-08 19:30"],[2,"望京店新车到店开箱",0,"00:55:00",1210,0.29,"10-11 10:00"]];
+const rooms=ROOMS.map(([sid,title,on,dur,viewers,ratio,start],i)=>{const st=stores.find(x=>x.id===sid),mins=Math.round(toMin(dur.slice(0,5))+(+dur.slice(6))/60);
+  const peak=Math.round(viewers*ratio),online=on?Math.round(peak*0.82):0,s0=on?toMin(DEMO_NOW.hm)-mins:toMin(start.slice(6));
+  const raw=Array.from({length:mins},(_,k)=>Math.min(1,0.25+0.75*k/Math.max(1,mins*0.3))*(1+0.12*Math.sin(k/7+i))+0.06*hsh(sid,600+k));
+  const mx=Math.max(...(on?raw.slice(0,-1):raw));const curve=raw.map((v,k)=>({t:hm(s0+k),v:Math.min(peak,Math.round(v/mx*peak))}));if(on)curve[curve.length-1].v=online;
+  const lead=Math.max(1,Math.round(viewers*st.leads/st.viewers30)),inter=Math.round(viewers*0.21);
+  return {id:i+1,sid,title,on,dur,viewers,peak,online,start:on?DEMO_NOW.md+" "+hm(s0):start,curve,lead,inter,exposure:viewers*(5+i%3),visit:Math.round(lead*st.visits/st.leads)}});
+window.DB={stores,leads,storeLeads,pkHistory,checks,national,rooms,SCORE_W,MX,DAYS,WIN,W0,DEMO_NOW,STORE_METRICS};
 })();
