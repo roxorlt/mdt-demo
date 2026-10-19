@@ -133,5 +133,5 @@ xihu.leads=STORE_METRICS.monthLeads;
 xihu.plays=STORE_METRICS.monthPlays;
 
 const trend=[];for(let d=1;d<=14;d++)trend.push({d:`10-${String(d).padStart(2,"0")}`,play:Math.round(6.2e6+d*2.6e5+Math.sin(d/1.6)*9e5+(d==4?1.8e6:0)+(d==11?1.5e6:0)),leads:Math.round(360+d*11+Math.sin(d/1.4)*60+(d==4?120:0)+(d==11?95:0))});
-window.DB={stores,pk,leads,trend,storeLeads,kpi:{stores:48,accounts:312,plays:"1.2",inter:"380",leads:6842,rate:"3.1"},STORE_METRICS};
+window.DB={stores,pk,leads,trend,storeLeads,kpi:{stores:48,accounts:312,plays:"1.2",inter:"380",leads:stores.reduce((a,x)=>a+x.leads,0),rate:"3.1"},STORE_METRICS};
 })();

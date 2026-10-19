@@ -4,7 +4,9 @@ const ROLES={
  region:{name:"大区经理",acc:"east_region_mgr",who:"华东大区 · 大区经理",scopeName:"华东大区",home:"dashboard",desc:"仅查看华东大区 12 家门店的数据与线索",scope:"本大区",menus:["dashboard","stores","leads","ai","live","pk","tasks","publish"]},
  store:{name:"门店店长",acc:"hz_xihu_manager",who:"杭州星驰西湖店 · 店长",scopeName:"杭州星驰西湖店",home:"dashboard",desc:"仅查看本门店账号、直播与线索",scope:"本门店",menus:["dashboard","stores","leads","ai","live","pk","tasks","mobile"]},
  sales:{name:"销售顾问",acc:"hz_xihu_sales_a",who:"杭州星驰西湖店 · 销售顾问A",scopeName:"销售顾问A",home:"leads",desc:"只看分配给自己的线索，可领取 AI 脚本",scope:"仅本人",menus:["leads","ai","live","mobile"]}};
-let ROLE="store",loginRole="store";const R=()=>ROLES[ROLE];
+let ROLE="hq",loginRole="store";const R=()=>ROLES[ROLE];
+/* 线索总数口径：门店本月线索之和（总部=全部门店，大区=本区门店，门店=本店）；销售顾问=本人线索 */
+const leadTotal=()=>ROLE=="sales"?D.leads.length:D.stores.reduce((a,x)=>a+x.leads,0);
 const navFor=()=>{const m=R().menus;const out=[];let g=null;NAV.forEach(n=>{if(n.length==1)g=n;else if(m.includes(n[0])){if(g){out.push(g);g=null}out.push(n)}});return out};
 const platSplit=()=>{const c={抖音:0,快手:0,小红书:0};D.stores.forEach(s=>s.accounts.forEach(a=>c[a.plat]++));return `抖音 ${c.抖音} · 快手 ${c.快手} · 小红书 ${c.小红书}`};
 function applyScope(){const st=ALL.stores;D.stores=ROLE=="region"?st.filter(s=>s.region=="华东"):ROLE=="store"||ROLE=="sales"?st.filter(s=>s.id==13):st;
