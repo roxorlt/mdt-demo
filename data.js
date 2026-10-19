@@ -145,13 +145,26 @@ const jt=(id,i)=>0.85+0.3*hsh(id,i);
 function fitSum(raw,total,from=0,to=raw.length){const S=raw.slice(from,to).reduce((a,b)=>a+b,0)||1,k=total/S;const o=raw.map(v=>Math.max(0,Math.round(v*k)));
   let d=total-o.slice(from,to).reduce((a,b)=>a+b,0),i=to-1;while(d!==0){if(d>0||o[i]>0){o[i]+=Math.sign(d);d-=Math.sign(d)}i=i-1<from?to-1:i-1}return o}
 const GW_FROM=di("10-01"),GW_TO=di("10-07"),GW_BOOST=1.4;
-/* 西湖店（案例设定）：加入前 8 月每天约 7 条（8 月合计 210 = before.monthLeads）；9-01 加入，9-08 起爬坡；近 30 天每天 12–18 条、合计 450 */
-const XIHU_W=[13,14,12,15,14,16,13,14,15,13,16,14,15,17,14,15, 16,15,17,16,15,14,18, 15,16,17,16,17,13,15];
-const XIHU_DAILY=[...fitSum(Array.from({length:31},(_,i)=>7*jt(13,i)),210),7,6,8,7,7,6,8, 8,9,10,10,11,11,12, ...XIHU_W];
-/* 华东前三（第二轮为保西湖店第 4 调高过本月线索：浦东 169→512、河西 233→487、园区 139→462）：
- * 历史按原水平，9-08 至 9-21 爬坡到现水平，这样往月战报不会被它们包揽 */
+/* ============================================================
+ * 第五轮：西湖店按周爆发（案例口径：每天 7 条 → 15 条左右、近 30 天 450、华东名次 9→7→5→4）
+ * 周 = 自接入日 9-01 起每 7 天一段；第 7 周（10-13 至 10-14）为进行中。
+ * 华东名次 = 该周 10 家参赛门店「每日线索之和」排序后西湖店的名次（页面显示也由此计算）。
+ * ============================================================ */
+const WEEKS=[["09-01","09-07"],["09-08","09-14"],["09-15","09-21"],["09-22","09-28"],["09-29","10-05"],["10-06","10-12"],["10-13","10-14"]];
+/* 西湖店：8 月（接入前）每天约 7 条、合计 210；9-01 接入后逐周上涨 */
+const XIHU_WEEKS=[[7,6,8,7,7,6,8],[8,8,9,9,9,10,10],[10,11,11,11,12,12,13],[15,15,16,15,16,16,17],[15,16,17,16,17,17,16],[17,16,18,17,16,17,17],[13,15]];
+const XIHU_DAILY=[...fitSum(Array.from({length:31},(_,i)=>7*jt(13,i)),210),...XIHU_WEEKS.flat()];
+/* 华东其余 9 家参赛门店每周线索（周 1–7）。周 3–7 之和 = 该店近 30 天线索（与第四轮相同，未改总数）；
+ * 周 1–2（9-01 至 9-14，近 30 天之前的历史周）按「9 月上旬新车上市补贴档期」调高，使西湖店接入首周排第 9、次周第 7；
+ * 滨江店 9-15 至 9-21 有一周集中交付活动（81 条），使西湖店该周排第 5；其后西湖店稳定第 4。 */
+const EAST_WEEKS={"上海星驰浦东店":[58,80,98,118,128,130,38],"南京星驰河西店":[62,84,95,114,122,124,32],"苏州星驰园区店":[55,72,82,112,116,121,31],
+  "杭州星驰滨江店":[57,70,81,22,22,23,8],"福州星驰仓山店":[54,68,30,30,33,40,13],"宁波星驰鄞州店":[53,66,24,25,30,27,10],
+  "合肥星驰政务区店":[52,58,23,23,30,26,8],"上海星驰闵行店":[51,55,21,21,28,24,5],"无锡星驰太湖店":[7,7,7,7,8,10,4]};
+/* 华东前三 8 月按原水平（浦东 169、河西 233、园区 139 / 30 天），9 月起按上表 */
 const ORIG={"上海星驰浦东店":169,"南京星驰河西店":233,"苏州星驰园区店":139};
-/* 近 30 天内新加入的门店（门店数「较前 30 天」由此计算） */
+/* 西湖店每日发布（9-15 至 10-14）：9-15 至 9-30 共 33 条，近 14 天（10-01 至 10-14）31 条，其中本周 10-12 至 10-14 共 7 条；近 30 天 64 条 */
+const XIHU_POSTS=[2,2,3,2,2,2,2,2,2,2,2,2,2,2,2,2, 2,3,2,2,2,2,2,2,2,2,3, 2,3,2];
+const sumR=(x,a,b)=>x.daily.slice(di(a),di(b)+1).reduce((p,q)=>p+q,0);
 const SINCE={47:"09-26",48:"10-09"};
 for(const x of stores){
   x.since=SINCE[x.id]||"05-01";
@@ -159,6 +172,8 @@ for(const x of stores){
   else{const r0=ORIG[x.name]?ORIG[x.name]/x.leads:1,a=di("09-07"),b=di("09-21"),s0=di(x.since);
     const raw=DAYS.map((_,i)=>i<s0?0:(i<=a?r0:i>=b?1:r0+(1-r0)*(i-a)/(b-a))*jt(x.id,i)*(i>=GW_FROM&&i<=GW_TO?GW_BOOST:1));
     x.daily=fitSum(raw,x.leads,W0,WN)}
+  if(EAST_WEEKS[x.name]){const T=EAST_WEEKS[x.name];if(T.slice(2).reduce((p,q)=>p+q,0)!==x.leads)console.error("周合计≠近 30 天线索",x.name);
+    WEEKS.forEach(([a,b],k)=>{const i0=di(a),i1=di(b)+1;const seg=fitSum(DAYS.slice(i0,i1).map((_,j)=>jt(x.id,i0+j)*(i0+j>=GW_FROM&&i0+j<=GW_TO?GW_BOOST:1)),T[k]);seg.forEach((v,j)=>x.daily[i0+j]=v)})}
   const w=x.daily.slice(W0);x.leads=w.reduce((a,b)=>a+b,0);
   x.prevLeads=x.daily.slice(W0-30,W0).reduce((a,b)=>a+b,0);  // 前 30 天（8-16 至 9-14）
   x.today=x.daily[WN-1];x.yday=x.daily[WN-2];
@@ -171,6 +186,12 @@ for(const x of stores){
   const bad=lag.has(x.id),big={"上海星驰浦东店":46,"南京星驰河西店":44,"苏州星驰园区店":43};
   if(x.id===STORE_METRICS.storeId){x.lives30=STORE_METRICS.lives30;x.viewers30=STORE_METRICS.viewers30;x.posts30=STORE_METRICS.posts30}
   else{x.lives30=big[x.name]||(bad?1+x.id%3:12+Math.floor(28*hsh(x.id,7)));x.viewers30=x.lives30*(700+Math.round(1600*hsh(x.id,9)));x.posts30=Math.round(x.week*10*jt(x.id,11))}
+  /* 每日发布（近 30 天）：最后 3 天（10-12 至 10-14，本周）之和 = 本周发布；近 14 天 / 近 30 天 均由此相加 */
+  if(x.id===STORE_METRICS.storeId)x.postsDaily=XIHU_POSTS.slice();
+  else x.postsDaily=[...fitSum(WIN.slice(0,27).map((_,i)=>0.4+hsh(x.id,800+i)),x.posts30-x.week),...fitSum([1,1.1,0.9],x.week)];
+  x.posts30=x.postsDaily.reduce((p,q)=>p+q,0);x.posts14=x.postsDaily.slice(-14).reduce((p,q)=>p+q,0);
+  /* 门店人员：店长 1 人；销售顾问人数（西湖店 6 人：销售顾问A–F，与线索负责人一致） */
+  x.sales=x.id===STORE_METRICS.storeId?6:bad?3:big[x.name]?7:4+Math.floor(3*hsh(x.id,700));
   x.aiWeek=Math.round(x.week*1.8);
   // 线索跟进 / 到店 / 成交（比例与西湖店一致）
   if(x.id===STORE_METRICS.storeId)Object.assign(x,{pending:STORE_METRICS.pendingFollow,overdue:STORE_METRICS.overdueFollow,visits:STORE_METRICS.monthSummary.visits,deals:STORE_METRICS.monthSummary.deals,aiReplies:STORE_METRICS.aiReplies});
@@ -180,11 +201,15 @@ for(const x of stores){
   // 账号本周发布之和 = 门店本周发布
   const ap=fitSum(x.accounts.map((_,k)=>0.5+hsh(x.id,500+k)),x.week);x.accounts.forEach((a,k)=>a.posts=ap[k]);
 }
-const sumR=(x,a,b)=>x.daily.slice(di(a),di(b)+1).reduce((p,q)=>p+q,0);
 /* 华东 PK 榜（近 30 天线索） */
 STORE_METRICS.pkBoard=PK_EAST.map(f).sort((a,b)=>b.leads-a.leads).map(x=>({n:x.name,leads:x.leads,lives:x.lives30,id:x.id}));
 STORE_METRICS.pkRegionTotal=STORE_METRICS.pkBoard.length;
 STORE_METRICS.pkRegionRank=STORE_METRICS.pkBoard.findIndex(x=>x.n==xihu.name)+1;
+/* 西湖店每周华东名次（10 家参赛门店按该周每日线索之和排序，并列按同分同名次）与每周日均 */
+const weekRank=WEEKS.map(([a,b],k)=>{const days=di(b)-di(a)+1,me=sumR(xihu,a,b),all=PK_EAST.map(n=>sumR(f(n),a,b));
+  return {no:k+1,from:a,to:b,days,leads:me,avg:Math.round(me/days*10)/10,rank:1+all.filter(v=>v>me).length,tie:all.filter(v=>v===me).length>1,partial:days<7}});
+STORE_METRICS.pkWeekRank=weekRank;
+STORE_METRICS.pkJoinRank=weekRank[0].rank;STORE_METRICS.monthSummary.rankFrom=weekRank[0].rank;STORE_METRICS.before.pkRank=weekRank[0].rank;
 /* 全国综合分：线索 50% + 直播观看 30% + 发布量 20%；每项除以 48 店中该项最大值归一化，满分 100 */
 const SCORE_W={leads:0.5,viewers30:0.3,posts30:0.2};
 const MX=Object.fromEntries(Object.keys(SCORE_W).map(k=>[k,Math.max(...stores.map(x=>x[k]))]));
@@ -192,12 +217,13 @@ stores.forEach(x=>{x.score=Math.round(1000*Object.entries(SCORE_W).reduce((a,[k,
 const national=[...stores].sort((a,b)=>b.score-a.score||a.id-b.id).map((x,i)=>({rank:i+1,n:x.name,id:x.id,score:x.score,leads:x.leads,viewers:x.viewers30,posts:x.posts30}));
 /* 历史战报：按活动期间留资（= 期间每日线索之和）排名，取前三；当月线索 = 该店当月每日线索之和 */
 const PKH=[{name:"国庆黄金周 PK",from:"10-01",to:"10-07",mFrom:"10-01",mTo:"10-14",mLabel:"10 月 1–14 日"},
-  {name:"9 月新车上市 PK",from:"09-01",to:"09-07",mFrom:"09-01",mTo:"09-30",mLabel:"9 月"},
+  {name:"9 月新车上市 PK",from:"09-10",to:"09-23",mFrom:"09-01",mTo:"09-30",mLabel:"9 月"},
   {name:"8 月夏日试驾 PK",from:"08-12",to:"08-25",mFrom:"08-01",mTo:"08-31",mLabel:"8 月"}];
 const pkHistory=PKH.map(h=>{const all=stores.map(x=>({store:x.name,region:x.region,leads:sumR(x,h.from,h.to),monthLeads:sumR(x,h.mFrom,h.mTo)})).sort((a,b)=>b.leads-a.leads||a.store.localeCompare(b.store));
   all.forEach(r=>r.rank=1+all.filter(o=>o.leads>r.leads).length);
   return {...h,period:h.from.replace(/^0/,"")+" 至 "+h.to.replace(/^0/,""),top:all.filter(r=>r.rank<=3),xihuRank:all.find(r=>r.store==xihu.name).rank}});
-const checks=pkHistory.map(h=>({name:h.name,xihuRank:h.xihuRank,ok:!h.top.some(t=>t.store==xihu.name)&&h.top.every(t=>t.leads<=t.monthLeads)}));
+const checks=pkHistory.map(h=>({name:h.name,xihuRank:h.xihuRank,ok:h.top.length===3&&new Set(h.top.map(t=>t.rank)).size===3&&!h.top.some(t=>t.store==xihu.name)&&h.top.every(t=>t.leads<=t.monthLeads)}));
+if(weekRank.some(w=>w.tie))console.error("周名次并列",weekRank);
 if(checks.some(c=>!c.ok))console.error("pkHistory 校验失败",checks);
 /* 直播间：单场观看人次 600–2,500；峰值在线 = 观看人次 × 1/5–1/3；留资 = 观看人次 × 本店留资率（线索 ÷ 直播观看人次） */
 const toMin=t=>{const[h,m]=t.split(":").map(Number);return h*60+m},hm=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
@@ -211,5 +237,10 @@ const rooms=ROOMS.map(([sid,title,on,dur,viewers,ratio,start],i)=>{const st=stor
   const mx=Math.max(...(on?raw.slice(0,-1):raw));const curve=raw.map((v,k)=>({t:hm(s0+k),v:Math.min(peak,Math.round(v/mx*peak))}));if(on)curve[curve.length-1].v=online;
   const lead=Math.max(1,Math.round(viewers*st.leads/st.viewers30)),inter=Math.round(viewers*0.21);
   return {id:i+1,sid,title,on,dur,viewers,peak,online,start:on?DEMO_NOW.md+" "+hm(s0):start,curve,lead,inter,exposure:viewers*(5+i%3),visit:Math.round(lead*st.visits/st.leads)}});
-window.DB={stores,leads,storeLeads,pkHistory,checks,national,rooms,SCORE_W,MX,DAYS,WIN,W0,DEMO_NOW,STORE_METRICS};
+/* 角色人数（角色与权限页）：总部管理员名单 3 人；大区经理每大区 1 人；店长每店 1 人；销售顾问 = 各店销售顾问之和 */
+const HQ_ADMINS=[{name:"品牌数字营销部 · 总部管理员",acc:"hq_admin"},{name:"品牌数字营销部 · 内容运营",acc:"hq_content"},{name:"品牌数字营销部 · 数据分析",acc:"hq_data"}];
+const REGION_MGRS=Object.keys(regions).map(r=>({region:r,name:r+"大区经理"}));
+const roleCount={hq:HQ_ADMINS.length,region:REGION_MGRS.length,store:stores.length,sales:stores.reduce((a,x)=>a+x.sales,0)};
+const PK_SEASON={name:"金秋直播 PK 赛",from:"09-15",to:"10-31"}; // 赛期；排名按赛期累计至今（9-15 至 10-14 = 近 30 天）
+window.DB={PK_SEASON,HQ_ADMINS,REGION_MGRS,roleCount,weekRank,WEEKS,stores,leads,storeLeads,pkHistory,checks,national,rooms,SCORE_W,MX,DAYS,WIN,W0,DEMO_NOW,STORE_METRICS};
 })();
