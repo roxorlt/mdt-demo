@@ -41,7 +41,7 @@ const STORE_METRICS={
   pkJoinRank:9,            // 示意：加入门店通时排名
   // pkBoard / pkRegionRank 由门店矩阵数据计算（见文件末尾），不再单独写死
   pkBoard:[],
-  pkWeekRank:[{w:"9月第1周",r:9},{w:"9月第3周",r:7},{w:"10月第1周",r:5},{w:"10月第2周",r:4}],
+  pkWeekRank:[],           // 由每日线索计算（见文件末尾 weekRank），周标签为日期区间
   // —— 任务（示意）：结果仅绝对数量，无百分比 ——
   // 全店今日任务表（唯一来源）：任务页 / 驾驶舱 / 手机工作台都从这里取。status: done 已完成 · todo 待完成 · later 未开始（演示时刻 14:00）
   dailyTasks:[
@@ -156,10 +156,14 @@ const XIHU_WEEKS=[[7,6,8,7,7,6,8],[8,8,9,9,9,10,10],[10,11,11,11,12,12,13],[15,1
 const XIHU_DAILY=[...fitSum(Array.from({length:31},(_,i)=>7*jt(13,i)),210),...XIHU_WEEKS.flat()];
 /* 华东其余 9 家参赛门店每周线索（周 1–7）。周 3–7 之和 = 该店近 30 天线索（与第四轮相同，未改总数）；
  * 周 1–2（9-01 至 9-14，近 30 天之前的历史周）按「9 月上旬新车上市补贴档期」调高，使西湖店接入首周排第 9、次周第 7；
- * 滨江店 9-15 至 9-21 有一周集中交付活动（81 条），使西湖店该周排第 5；其后西湖店稳定第 4。 */
+ * 第六轮：滨江店 9-15 至 9-21 由 81 条削平到 48 条（同期华东 12 店周均值约 50），削下的 33 条摊到其窗口内其余周（33/33/33/9），近 30 天仍 156；
+ * 西湖店该周排第 5 改由福州仓山店承担：仓山店档期后逐周回落（81→63→50→40），近 30 天 146→245，
+ * 多出的 99 条由宁波鄞州（116→83）、合肥政务区（110→77）、上海闵行（99→66）分担，华东合计不变；其后西湖店稳定第 4。 */
 const EAST_WEEKS={"上海星驰浦东店":[58,80,98,118,128,130,38],"南京星驰河西店":[62,84,95,114,122,124,32],"苏州星驰园区店":[55,72,82,112,116,121,31],
-  "杭州星驰滨江店":[57,70,81,22,22,23,8],"福州星驰仓山店":[54,68,30,30,33,40,13],"宁波星驰鄞州店":[53,66,24,25,30,27,10],
-  "合肥星驰政务区店":[52,58,23,23,30,26,8],"上海星驰闵行店":[51,55,21,21,28,24,5],"无锡星驰太湖店":[7,7,7,7,8,10,4]};
+  "杭州星驰滨江店":[57,70,48,33,33,33,9],"福州星驰仓山店":[54,68,81,63,50,40,11],"宁波星驰鄞州店":[53,66,17,18,22,19,7],
+  "合肥星驰政务区店":[52,58,16,16,21,18,6],"上海星驰闵行店":[51,55,14,14,19,16,3],"无锡星驰太湖店":[7,7,7,7,8,10,4]};
+/* 第六轮调整后的近 30 天线索（其余店 = 初始值）；8 月及 9-01 前历史仍按初始值生成，不受影响 */
+const EAST_LEADS_FIX6={"福州星驰仓山店":245,"宁波星驰鄞州店":83,"合肥星驰政务区店":77,"上海星驰闵行店":66};
 /* 华东前三 8 月按原水平（浦东 169、河西 233、园区 139 / 30 天），9 月起按上表 */
 const ORIG={"上海星驰浦东店":169,"南京星驰河西店":233,"苏州星驰园区店":139};
 /* 西湖店每日发布（9-15 至 10-14）：9-15 至 9-30 共 33 条，近 14 天（10-01 至 10-14）31 条，其中本周 10-12 至 10-14 共 7 条；近 30 天 64 条 */
@@ -172,7 +176,7 @@ for(const x of stores){
   else{const r0=ORIG[x.name]?ORIG[x.name]/x.leads:1,a=di("09-07"),b=di("09-21"),s0=di(x.since);
     const raw=DAYS.map((_,i)=>i<s0?0:(i<=a?r0:i>=b?1:r0+(1-r0)*(i-a)/(b-a))*jt(x.id,i)*(i>=GW_FROM&&i<=GW_TO?GW_BOOST:1));
     x.daily=fitSum(raw,x.leads,W0,WN)}
-  if(EAST_WEEKS[x.name]){const T=EAST_WEEKS[x.name];if(T.slice(2).reduce((p,q)=>p+q,0)!==x.leads)console.error("周合计≠近 30 天线索",x.name);
+  if(EAST_WEEKS[x.name]){const T=EAST_WEEKS[x.name];if(T.slice(2).reduce((p,q)=>p+q,0)!==(EAST_LEADS_FIX6[x.name]??x.leads))console.error("周合计≠近 30 天线索",x.name);
     WEEKS.forEach(([a,b],k)=>{const i0=di(a),i1=di(b)+1;const seg=fitSum(DAYS.slice(i0,i1).map((_,j)=>jt(x.id,i0+j)*(i0+j>=GW_FROM&&i0+j<=GW_TO?GW_BOOST:1)),T[k]);seg.forEach((v,j)=>x.daily[i0+j]=v)})}
   const w=x.daily.slice(W0);x.leads=w.reduce((a,b)=>a+b,0);
   x.prevLeads=x.daily.slice(W0-30,W0).reduce((a,b)=>a+b,0);  // 前 30 天（8-16 至 9-14）
@@ -207,7 +211,7 @@ STORE_METRICS.pkRegionTotal=STORE_METRICS.pkBoard.length;
 STORE_METRICS.pkRegionRank=STORE_METRICS.pkBoard.findIndex(x=>x.n==xihu.name)+1;
 /* 西湖店每周华东名次（10 家参赛门店按该周每日线索之和排序，并列按同分同名次）与每周日均 */
 const weekRank=WEEKS.map(([a,b],k)=>{const days=di(b)-di(a)+1,me=sumR(xihu,a,b),all=PK_EAST.map(n=>sumR(f(n),a,b));
-  return {no:k+1,from:a,to:b,days,leads:me,avg:Math.round(me/days*10)/10,rank:1+all.filter(v=>v>me).length,tie:all.filter(v=>v===me).length>1,partial:days<7}});
+  return {no:k+1,from:a,to:b,label:a.replace(/^0/,"")+" 至 "+b.replace(/^0/,""),days,leads:me,avg:Math.round(me/days*10)/10,rank:1+all.filter(v=>v>me).length,tie:all.filter(v=>v===me).length>1,partial:days<7}});
 STORE_METRICS.pkWeekRank=weekRank;
 STORE_METRICS.pkJoinRank=weekRank[0].rank;STORE_METRICS.monthSummary.rankFrom=weekRank[0].rank;STORE_METRICS.before.pkRank=weekRank[0].rank;
 /* 全国综合分：线索 50% + 直播观看 30% + 发布量 20%；每项除以 48 店中该项最大值归一化，满分 100 */
